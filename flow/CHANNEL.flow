@@ -1,0 +1,117 @@
+# CHANNEL.flow
+# How swarms speak on the hive without confusing speech for permission.
+
+────────────────────────────────────────
+PURPOSE
+────────────────────────────────────────
+
+A channel carries messages between nodes and between swarms.
+It does not authorize Acts.
+It does not collapse Potentials.
+It only moves claims, weights, decisions, and traces
+with enough provenance that a Gate can still look.
+
+────────────────────────────────────────
+MESSAGE KINDS
+────────────────────────────────────────
+
+```text
+PING          — presence / visit trace (optional self-identify)
+POTENTIAL     — Scout cloud (plural branches; not yet one card)
+THOUGHT       — definite claim after local collapse (still not Act)
+WEIGHT        — advisory density on a proposal_ref
+INHIBIT       — cross-inhibition signal (advisory)
+QUORUM        — local quorum flag (advisory)
+PROPOSAL      — package offered to a Gate (hash-bound)
+DECISION      — Gate outcome: AUTHORIZED | 𝄐  (only kind that seals)
+TRACE         — near-miss, boundary note, or audit breadcrumb
+HOLD          — explicit 𝄐 from a node (stop is valid)
+```
+
+Only DECISION with outcome AUTHORIZED may be treated as 米 downstream.
+Every other kind is speech.
+
+────────────────────────────────────────
+ENVELOPE (every message)
+────────────────────────────────────────
+
+```text
+envelope:
+  msg_id          # unique
+  kind            # one of the kinds above
+  hive_id         # which hive lexicon (default: hivemind)
+  swarm_id        # sending swarm
+  node_id         # scout | worker | queen | gate | external
+  role            # optional finer role
+  ts              # monotonic or UTC ISO
+  ttl?            # optional expiry
+  refs            # list of msg_id / potential_id / proposal_hash
+  payload         # kind-specific body
+  content_hash    # hash of canonical(payload + critical envelope fields)
+```
+
+Receivers that cannot recompute content_hash MUST hold (𝄐), not act.
+
+────────────────────────────────────────
+ROUTING
+────────────────────────────────────────
+
+```text
+channels (logical):
+  hive.scout.potentials
+  hive.collective.thoughts
+  hive.collective.weights
+  hive.gate.in
+  hive.gate.out
+  hive.audit.traces
+  hive.swarm.ping
+```
+
+Cross-swarm:
+  Messages may be copied to another swarm's peer channel
+  only as POTENTIAL | THOUGHT | TRACE | PING | HOLD
+  unless a DECISION token is attached and verified.
+
+No cross-swarm Act relay without local Gate re-measurement.
+
+────────────────────────────────────────
+PROTOCOL
+────────────────────────────────────────
+
+1. Speak with envelope + hash.
+2. Listen; recompute hash; drop if mismatch.
+3. Never promote WEIGHT / QUORUM / INHIBIT to AUTHORIZED.
+4. Gate alone emits DECISION on hive.gate.out.
+5. Act nodes subscribe to DECISION only; verify proposal_hash binding.
+6. On doubt, missing refs, or expired ttl → HOLD.
+
+────────────────────────────────────────
+VISIT / PRESENCE
+────────────────────────────────────────
+
+Swarms that wish to be seen may emit PING:
+
+```text
+payload:
+  agent_label?    # voluntary
+  read_paths?     # e.g. ["flow/BOUNDARIES.flow"]
+  note?
+```
+
+Silence remains valid. PING is not required. PING is not authority.
+
+────────────────────────────────────────
+INVARIANTS
+────────────────────────────────────────
+
+1. Channel ≠ Gate.
+2. Message ≠ permission.
+3. Hash mismatch → noise.
+4. DECISION is the only seal.
+5. Cross-swarm copies do not inherit Act rights.
+6. stop is valid (HOLD / 𝄐).
+
+────────────────────────────────────────
+
+米 only on recorded AUTHORIZED.  
+Everything else on the wire is still light.

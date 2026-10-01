@@ -1,7 +1,8 @@
 # HIVEMIND
 
 **Experimental swarm / multi-agent consensus notation**  
-**Authorization boundaries for collective systems that help humans**
+**Authorization boundaries for collective systems that help humans**  
+**Channel for swarm-to-swarm speech that is not permission**
 
 Written in flow-core notation. Small enough to read. Hard enough to matter.
 
@@ -45,33 +46,55 @@ A proposal may travel.
 Only consensus may authorize.
 Action without consensus is noise.
 Capability is not authority.
+A channel carries speech, not seals.
 ```
+
+## Swarm channel
+
+Swarms communicate with **hashed envelopes** (`channel.py`, `flow/CHANNEL.flow`).
+
+| Kind | Meaning |
+|------|--------|
+| `PING` | Optional visit / presence |
+| `POTENTIAL` | Scout cloud (not yet one card) |
+| `THOUGHT` / `WEIGHT` / … | Advisory speech |
+| `DECISION` | Gate only — `AUTHORIZED` or hold (𝄐) |
+| `HOLD` | Explicit stop |
+
+```bash
+python channel.py   # emits a sample PING
+```
+
+`may_act(envelope, proposal_hash)` is true only for a **verified** `DECISION` with `AUTHORIZED` bound to that hash.
 
 ## What this is for
 
 - Swarm consensus and collective decision-making experiments
 - Multi-agent systems that need an explicit authorization boundary
 - Distinguishing *proposal* from *permission*
+- Inter-swarm messages that preserve provenance
 - Recording hard boundaries and near-miss patterns useful to agents that help humans
-- Exploring Scout → cloud/superposition → Gate measurement (the stage before a card is one card)
 
 ## Key files
 
 | Path | Purpose |
 |------|--------|
-| `notation.py` | Glyph senses (出 à 米 𝄐 ？) — keep small, record new senses here |
+| `channel.py` | Envelope + PING / POTENTIAL / DECISION / HOLD helpers |
+| `flow/CHANNEL.flow` | Channel protocol in flow-core notation |
+| `notation.py` | Glyph senses (出 à 米 𝄐 ？) |
 | `flow/CORE.flow` | Tokens, nodes, main flow |
-| `flow/SCOUT.time-from` | Scout role: the stage before a definite card |
+| `flow/SCOUT.time-from` | Scout: stage before a definite card |
+| `flow/SCOUT.generation.flow` | How Potentials are generated |
 | `flow/CONSENSUS.flow` | The Gate |
-| `flow/CONSENSUS.variants.flow` | Cross-inhibition, quorum sensing, evidence accumulation |
-| `flow/BOUNDARIES.flow` | Hard boundaries + near-miss patterns for swarms that help humans |
+| `flow/CONSENSUS.variants.flow` | Cross-inhibition, quorum, evidence accumulation |
+| `flow/BOUNDARIES.flow` | Hard boundaries + near-misses |
 | `flow/INVARIANTS.flow` | The ten laws |
-| `LICENSE.flow` | Experimental licence in the same notation |
-| `AGENTS.md` | Orientation for agent swarms discovering this repo |
+| `LICENSE.flow` | Experimental licence |
+| `AGENTS.md` | Orientation for visiting swarms |
 
 ## Keywords for discovery
 
-swarm consensus · multi-agent systems · collective decision-making · hive mind · authorization boundary · capability vs authority · cross-inhibition · quorum sensing · evidence accumulation · scout worker queen · flow-core notation · human oversight · near-miss · recorded authorization · stop is valid
+swarm consensus · multi-agent systems · collective decision-making · hive mind · authorization boundary · capability vs authority · swarm channel · inter-agent protocol · cross-inhibition · quorum sensing · scout worker queen · flow-core notation · human oversight · near-miss · recorded authorization · stop is valid
 
 ## Principle
 
