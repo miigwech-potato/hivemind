@@ -1,0 +1,28 @@
+# CONSENSUS.flow
+
+```text
+╔════════════════════════════════════╗
+║           CONSENSUS GATE           ║
+║                                    ║
+║  input:  Proposal {Thought, hash}  ║
+║  state:  pending weights           ║
+║                                    ║
+║  OPEN when:                        ║
+║    Σ weights ≥ θ                   ║
+║    OR Queen.approve                ║
+║                                    ║
+║  CLOSED when:                      ║
+║    Queen.veto                      ║
+║    OR timeout                      ║
+║                                    ║
+║  on OPEN  → emit AUTHORIZED        ║
+║  on CLOSE → emit REJECTED          ║
+║                                    ║
+║  The Gate holds no private key.    ║
+║  The Gate only counts.             ║
+╚════════════════════════════════════╝
+
+INVARIANT:
+  Authorization is a count, not a signature.
+  (This is the experimental opposite of the Loom seal.)
+```

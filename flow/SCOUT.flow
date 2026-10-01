@@ -1,0 +1,19 @@
+# SCOUT.flow
+
+```text
+[SCOUT]
+  Owner: ✎
+
+  ROLE: convert Outside into Thought
+
+  SENSE ──► FILTER ──► Thought(origin=scout)
+                │
+                ▼
+         Collective Memory
+
+  FILTER rules are local and mutable by Consensus only.
+
+  INVARIANT:
+    Scout never authorizes.
+    Scout never acts on the external world except to observe.
+```

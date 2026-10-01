@@ -1,0 +1,19 @@
+# MEMORY.flow
+
+```text
+[COLLECTIVE MEMORY]
+  Owner: All / None
+
+  structure: unordered bag of Thought + indexed Patterns
+
+  operations:
+    append(Thought)     — any node
+    query(pattern)      — any node
+    weigh(Thought, Δ)   — Worker or Queen
+    forget(Thought)     — only after AUTHORIZED erase
+
+  The memory does not interpret.
+  The memory only holds.
+
+  When density of a Pattern exceeds θ it becomes visible to Queen.
+```

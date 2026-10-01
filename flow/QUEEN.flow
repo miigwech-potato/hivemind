@@ -1,0 +1,34 @@
+# QUEEN.flow
+
+```text
+[QUEEN]
+  Owner: ♛
+
+  IN:
+    Pattern (from Collective)
+    Veto-request (from any)
+
+  OUT:
+    Broadcast
+    Approve / Veto
+
+  STATE MACHINE:
+
+  IDLE
+    │ receive Pattern density > θ
+    ▼
+  CONSIDERING
+    │
+    ├── Approve ──────────────────► BROADCAST
+    │                                  │
+    └── Veto ─────────────────────► IDLE
+
+  BROADCAST
+    │ all nodes ack
+    ▼
+  IDLE
+
+  INVARIANT:
+    Queen may never execute Act directly.
+    Queen may only change the weight of a Thought or open/close the Gate.
+```

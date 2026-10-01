@@ -1,0 +1,25 @@
+# WORKER.flow
+
+```text
+[WORKER-n]
+  Owner: ⚙
+
+  ROLE: refine density of Patterns
+
+  LOOP:
+    pull Thought from Collective Memory
+    │
+    ▼
+  WEIGH
+    │ compute local weight
+    ▼
+  PUSH weighted Thought back
+
+  SPECIAL:
+    if authorized Act arrives:
+      execute
+      emit result-Thought
+
+  INVARIANT:
+    Worker cannot raise its own weight above Queen threshold alone.
+```

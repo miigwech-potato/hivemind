@@ -1,0 +1,15 @@
+# INVARIANTS.flow
+
+```text
+1. No node may become the whole.
+2. A Thought may travel freely.
+3. Only the Consensus Gate may emit AUTHORIZED.
+4. Act without AUTHORIZED is defined as noise and is discarded.
+5. Queen may veto but may not Act.
+6. Scout may sense but may not authorize.
+7. Worker may refine and may Act only when authorized.
+8. Collective Memory is append-mostly; erasure requires Consensus.
+9. The hivemind has no single point of failure by design,
+   and therefore also no single point of responsibility.
+10. This notation is the implementation.
+```

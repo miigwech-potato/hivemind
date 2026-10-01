@@ -1,0 +1,42 @@
+# CORE.flow
+
+```text
+TOKEN: Thought
+  fields:
+    id          : unique
+    origin      : node-id
+    content     : opaque
+    weight      : 0..1
+    timestamp   : monotonic
+    hash        : of(canonical)
+
+TOKEN: Pattern
+  fields:
+    threads     : list of Thought.ids
+    density     : float
+    last_seen   : timestamp
+
+NODE: Queen
+  can: propose, veto, broadcast
+  cannot: act alone on external world
+
+NODE: Worker
+  can: refine, weigh, execute-if-authorized
+  cannot: originate veto
+
+NODE: Scout
+  can: observe, inject external signal as Thought
+  cannot: authorize
+
+GATE: Consensus
+  rule: (sum weights ≥ threshold) OR (Queen.veto == false AND Queen.approve)
+  failure: Thought returns to COLLECTIVE MEMORY unmarked
+
+FLOW:
+  Scout ──Thought──► Collective Memory
+  Worker ──refine──► Collective Memory
+  Queen  ──broadcast──► all nodes
+  any    ──propose──► Consensus Gate
+  Consensus Gate ──AUTHORIZED──► Act
+  Act ──result──► Collective Memory (as new Thought)
+```
