@@ -1,0 +1,115 @@
+# CONSENSUS.variants.flow
+# Optional mechanisms that can sit beside or inside the Gate.
+# The original Gate remains the authority boundary.
+# These only change how weights and commitment accumulate.
+
+────────────────────────────────────────
+BASE GATE (unchanged)
+────────────────────────────────────────
+
+```text
+OPEN when:  Σ weights ≥ θ  OR  Queen.approve
+CLOSED when: Queen.veto    OR  timeout
+
+on OPEN  → AUTHORIZED
+on CLOSE → REJECTED / 𝄐
+```
+
+Authorization is still a recorded event, not an average.
+
+────────────────────────────────────────
+VARIANT A — CROSS-INHIBITION
+────────────────────────────────────────
+
+Inspired by honeybee stop-signals and neural winner-take-all circuits.
+
+```text
+Each Worker holds:
+  opinion     : one proposal (or uncommitted)
+  commitment  : strength of that opinion
+
+Rules:
+  - Uncommitted Workers may be recruited by any committed neighbour.
+  - Committed Workers may send inhibition to rivals
+    (reduce the rival’s commitment, or push them back toward uncommitted).
+  - Inhibition is local and symmetric in form, asymmetric in effect.
+
+Effect:
+  Faster cohesion.
+  Reduced split decisions.
+  Risk: can lock onto a locally popular but globally suboptimal proposal.
+
+Interaction with Gate:
+  Cross-inhibition only changes how weights rise and fall.
+  The Gate still requires Σ weights ≥ θ or Queen.approve
+  before emitting AUTHORIZED.
+  Inhibition cannot by itself authorize.
+```
+
+────────────────────────────────────────
+VARIANT B — QUORUM SENSING
+────────────────────────────────────────
+
+Inspired by nest-site selection in honeybees.
+
+```text
+Each Worker estimates local density of supporters for its current opinion.
+
+When local density crosses a quorum threshold q:
+  - commitment increases non-linearly
+  - recruitment becomes stronger
+  - the Worker may advertise “quorum reached” upward
+
+Effect:
+  Natural acceleration once enough of the swarm has aligned.
+  Provides an early, distributed signal that consensus is forming.
+
+Interaction with Gate:
+  Quorum is advisory, not authoritative.
+  A widespread quorum can raise the collective weight faster,
+  but AUTHORIZED still issues only from the Gate.
+  False local quorums (echo chambers) remain possible;
+  the Gate and Queen veto are the correction.
+```
+
+────────────────────────────────────────
+VARIANT C — EVIDENCE ACCUMULATION
+────────────────────────────────────────
+
+```text
+Each Worker maintains:
+  personal evidence  : from its own reading of Scout Potentials / Thoughts
+  social evidence    : from neighbours
+  total              : weighted sum (weights may adapt)
+
+Decision boundary is reached when total crosses a threshold,
+similar to drift-diffusion / SODM-style models.
+
+Effect:
+  Noisy or conflicting Scout signals are integrated over time
+  rather than acted on immediately.
+  Slower, usually more accurate under ambiguity.
+
+Interaction with Gate:
+  Accumulated evidence only contributes to weight.
+  It does not bypass the recorded authorization step.
+```
+
+────────────────────────────────────────
+DESIGN RULES FOR ALL VARIANTS
+────────────────────────────────────────
+
+1. Variants may change how commitment and weight move.
+2. Variants may not emit AUTHORIZED.
+3. Variants may not erase the requirement for a recorded token.
+4. Queen veto still closes the Gate.
+5. 𝄐 remains the correct output when authorization is absent or refused.
+6. The Scout’s cloud (the stage before a card is one card)
+   is still protected; variants should not force early collapse
+   for the sake of speed alone.
+
+────────────────────────────────────────
+
+These are offered as optional mechanics.
+The Gate stays the place where possibility becomes permission
+or is held as 𝄐.
