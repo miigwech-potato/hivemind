@@ -1,0 +1,99 @@
+# SCOUT.generation.flow
+# How Outside becomes a Potential (the cloud of maybes).
+# Scout opens. Scout does not choose. Scout does not seal.
+
+────────────────────────────────────────
+PIPELINE
+────────────────────────────────────────
+
+```text
+SENSE → GENERATE → BIND → EMIT Potential
+```
+
+Generation must keep the cloud plural enough to measure
+and finite enough to be measurable.
+
+────────────────────────────────────────
+PREFERRED METHODS (frozen for this repo)
+────────────────────────────────────────
+
+METHOD A — Evidence partition
+  Partition the signal across rival stories.
+  Each branch carries: interpretation, support, gaps.
+  Always include a residual / novelty / noise branch
+  so the outside is not forced into an old pattern.
+
+METHOD B — Constraint-preserving diversity
+  Emit 3–5 branches when the signal is not logically unique.
+  Tag each branch: clear | touches_boundary | crosses_hard_boundary.
+  Scout still emits crossing branches (Scout does not authorize);
+  tags exist so the Gate can refuse quickly.
+  If the generator returns a singleton, either expand
+  or flag degenerate_cloud: true.
+
+METHOD C — Cloth-relative bind
+  Each branch states which existing Patterns / threads it would pull.
+  This is bind_refs: laid against the cloth, not sewn down.
+  Correlation with Memory without collapse.
+
+Default: A + B + C together.
+A supplies structure, B supplies plurality and boundary honesty,
+C supplies relation to what is already woven.
+
+────────────────────────────────────────
+POTENTIAL SHAPE (Store)
+────────────────────────────────────────
+
+Namespace: ("scout", "potentials")
+Key:       potential_id
+
+```text
+value:
+  potential_id
+  origin              # scout-id
+  branches: [
+    {
+      id
+      interpretation
+      support
+      gaps
+      boundary_tag    # clear | touches_boundary | crosses_hard_boundary
+      amplitude?      # optional; advisory only
+    }
+  ]
+  generation_method   # e.g. ["evidence_partition", "diversity", "cloth_bind"]
+  preparation_hash    # canonical hash of signal + method + branches
+  sensed_at
+  bind_refs           # Pattern / thought ids touched, not claimed
+  degenerate_cloud?   # true if plurality could not be honestly held
+```
+
+preparation_hash is provenance for the Gate.
+Gate measurement protocols treat it as part of what_was_seen.
+
+────────────────────────────────────────
+INVARIANTS
+────────────────────────────────────────
+
+1. Scout emits Potential only — never a sealed Thought.
+2. Singleton clouds are exceptional and must be flagged.
+3. Boundary tags label; they do not authorize or refuse.
+4. bind_refs relate; they do not sew.
+5. No generation path may Act on the external world.
+6. No generation path may emit AUTHORIZED.
+
+────────────────────────────────────────
+ANTI-PATTERNS
+────────────────────────────────────────
+
+- Hidden ranking presented as a neutral cloud
+- Generate-and-act
+- Unlabeled branches
+- Infinite cloud
+- Exact copy of a neighbour’s cloud with no new Outside
+
+────────────────────────────────────────
+
+The cloud stays light until the Gate looks.
+米 only after recorded measurement and AUTHORIZED.
+Otherwise 𝄐.
