@@ -165,18 +165,27 @@ def decision(
     proposal_hash: str,
     outcome: DecisionOutcome,
     what_was_seen: dict[str, Any],
+    authorized_by: str,
     selected_interpretation: Optional[str] = None,
     ttl: str,
 ) -> Envelope:
-    """Build a DECISION envelope.  ttl is required (ISO-8601 UTC, future).
+    """Build a DECISION envelope under the hybrid authorization model.
 
-    Role is always stamped "gate".  Sender authenticity is not enforced;
-    that remains Defect 1, blocked on the owner's authorization-model decision.
+    Required:
+      - ttl: ISO-8601 UTC, must be future for may_act to pass
+      - authorized_by: named human who authorized
+      - what_was_seen: non-empty record of what that human saw
+
+    The Gate may still open on a weight count or Queen.approve; the seal
+    that may become 米 is that count PLUS this human record.
+    Role is stamped "gate".  Cryptographic sender authenticity is not
+    claimed (Gate holds no private key).
     """
     payload = {
         "proposal_hash": proposal_hash,
         "outcome": outcome.value,
         "what_was_seen": what_was_seen,
+        "authorized_by": authorized_by,
         "selected_interpretation": selected_interpretation,
     }
     return Envelope(
@@ -210,9 +219,9 @@ def hold(
 # Replay protection (single-process only)
 # ---------------------------------------------------------------------------
 # Once a proposal_hash is consumed, further may_act / consume calls for it
-# return False inside this process.  This does NOT close cross-node or
-# after-restart replay; that remains blocked on the owner's choice of
-# authorization model (count vs explicit recorded human), same as Defect 1.
+# return False inside this process.
+# Cross-node / after-restart replay is the harness's duty under the hybrid
+# model (durable shared spent store).  The library does not claim to close it.
 _spent_proposal_hashes: Set[str] = set()
 _spent_lock = threading.Lock()
 
@@ -227,13 +236,31 @@ def _ttl_ok(env: Envelope) -> bool:
         return False
 
 
+def _human_record_ok(env: Envelope) -> bool:
+    """Hybrid rule: AUTHORIZED must carry a named human + non-empty what_was_seen."""
+    authorized_by = env.payload.get("authorized_by")
+    if not isinstance(authorized_by, str) or not authorized_by.strip():
+        return False
+    what = env.payload.get("what_was_seen")
+    if not isinstance(what, dict) or len(what) == 0:
+        return False
+    return True
+
+
 def may_act(env: Envelope, expected_proposal_hash: str) -> bool:
-    """Pure check: verified, non-expired, non-consumed DECISION AUTHORIZED.
+    """Pure check: verified, non-expired, non-consumed DECISION AUTHORIZED
+    that carries a hybrid human authorization record.
 
     No side effects.  Call consume() only at the moment of action.
 
-    Role / sender authenticity is NOT enforced (Defect 1 still open).
-    Replay protection is single-process only (see module comment).
+    Hybrid model (owner decision):
+      Gate may open on count or Queen.approve (no private key).
+      The seal that may become 米 also requires authorized_by +
+      non-empty what_was_seen.  Without that record → hold.
+
+    Cryptographic sender authenticity is not claimed.
+    Replay protection is single-process only (see module comment);
+    durable / cross-node spent tracking is the harness's duty.
     """
     if env.kind != MsgKind.DECISION.value:
         return False
@@ -244,6 +271,8 @@ def may_act(env: Envelope, expected_proposal_hash: str) -> bool:
     if env.payload.get("proposal_hash") != expected_proposal_hash:
         return False
     if not _ttl_ok(env):
+        return False
+    if not _human_record_ok(env):
         return False
     with _spent_lock:
         if expected_proposal_hash in _spent_proposal_hashes:

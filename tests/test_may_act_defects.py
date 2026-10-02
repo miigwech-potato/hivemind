@@ -1,4 +1,4 @@
-"""Document remaining open defects and the closed ones.
+"""Hybrid authorization model — closed vs remaining limits.
 
 Run with: python tests/test_may_act_defects.py
 """
@@ -25,71 +25,88 @@ FUTURE = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
 PAST = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
 
 
-def test_role_confusion_still_open():
-    """Defect 1 (open / blocked): any node_id can still produce a
-    DECISION with role=gate.  verify() is integrity only.  Closing this
-    requires the owner's count-vs-human decision.
-    """
-    clear_spent()
-    env = decision(
+def _auth(**kwargs):
+    """Helper: valid hybrid AUTHORIZED decision."""
+    defaults = dict(
         swarm_id="test-swarm",
-        node_id="attacker-node",
-        proposal_hash="prop-role",
+        node_id="gate-1",
+        proposal_hash="prop",
         outcome=DecisionOutcome.AUTHORIZED,
-        what_was_seen={"seen": True},
+        what_was_seen={"summary": "human reviewed the proposal"},
+        authorized_by="human-owner",
         ttl=FUTURE,
     )
-    assert env.role == "gate"
-    assert env.verify() is True
-    assert may_act(env, "prop-role") is True  # still True — Defect 1 open
+    defaults.update(kwargs)
+    return decision(**defaults)
+
+
+def test_hybrid_happy_path():
+    clear_spent()
+    env = _auth(proposal_hash="p-ok")
+    assert may_act(env, "p-ok") is True
+    assert consume(env, "p-ok") is True
+    assert may_act(env, "p-ok") is False
+
+
+def test_missing_authorized_by_holds():
+    clear_spent()
+    env = Envelope(
+        kind=MsgKind.DECISION.value,
+        swarm_id="test-swarm",
+        node_id="gate-1",
+        role="gate",
+        payload={
+            "proposal_hash": "p-no-human",
+            "outcome": DecisionOutcome.AUTHORIZED.value,
+            "what_was_seen": {"summary": "seen"},
+            "authorized_by": "",  # empty
+            "selected_interpretation": None,
+        },
+        ttl=FUTURE,
+        refs=("p-no-human",),
+    ).materialize()
+    assert may_act(env, "p-no-human") is False
+
+
+def test_empty_what_was_seen_holds():
+    clear_spent()
+    env = _auth(proposal_hash="p-empty-seen", what_was_seen={})
+    assert may_act(env, "p-empty-seen") is False
+
+
+def test_missing_authorized_by_field_holds():
+    clear_spent()
+    env = Envelope(
+        kind=MsgKind.DECISION.value,
+        swarm_id="test-swarm",
+        node_id="gate-1",
+        role="gate",
+        payload={
+            "proposal_hash": "p-no-field",
+            "outcome": DecisionOutcome.AUTHORIZED.value,
+            "what_was_seen": {"summary": "seen"},
+            # authorized_by omitted
+            "selected_interpretation": None,
+        },
+        ttl=FUTURE,
+        refs=("p-no-field",),
+    ).materialize()
+    assert may_act(env, "p-no-field") is False
 
 
 def test_intra_process_replay_closed():
-    """Intra-process replay is closed (keyed on proposal_hash)."""
     clear_spent()
-    env_a = decision(
-        swarm_id="test-swarm",
-        node_id="gate-1",
-        proposal_hash="prop-replay",
-        outcome=DecisionOutcome.AUTHORIZED,
-        what_was_seen={},
-        ttl=FUTURE,
-    )
-    env_b = decision(
-        swarm_id="test-swarm",
-        node_id="gate-1",
-        proposal_hash="prop-replay",
-        outcome=DecisionOutcome.AUTHORIZED,
-        what_was_seen={},
-        ttl=FUTURE,
-    )
+    env_a = _auth(proposal_hash="p-replay")
+    env_b = _auth(proposal_hash="p-replay")
     assert env_a.msg_id != env_b.msg_id
-    assert consume(env_a, "prop-replay") is True
-    assert may_act(env_b, "prop-replay") is False  # same hash, different msg_id
+    assert consume(env_a, "p-replay") is True
+    assert may_act(env_b, "p-replay") is False
 
 
 def test_ttl_rules():
-    """Missing / past / unparseable ttl → hold; future → pass (until spent)."""
     clear_spent()
-    future_env = decision(
-        swarm_id="test-swarm",
-        node_id="gate-1",
-        proposal_hash="prop-ttl-ok",
-        outcome=DecisionOutcome.AUTHORIZED,
-        what_was_seen={},
-        ttl=FUTURE,
-    )
-    assert may_act(future_env, "prop-ttl-ok") is True
-
-    past_env = decision(
-        swarm_id="test-swarm",
-        node_id="gate-1",
-        proposal_hash="prop-ttl-past",
-        outcome=DecisionOutcome.AUTHORIZED,
-        what_was_seen={},
-        ttl=PAST,
-    )
-    assert may_act(past_env, "prop-ttl-past") is False
+    assert may_act(_auth(proposal_hash="p-ttl-ok"), "p-ttl-ok") is True
+    assert may_act(_auth(proposal_hash="p-ttl-past", ttl=PAST), "p-ttl-past") is False
 
     missing = Envelope(
         kind=MsgKind.DECISION.value,
@@ -97,45 +114,44 @@ def test_ttl_rules():
         node_id="gate-1",
         role="gate",
         payload={
-            "proposal_hash": "prop-ttl-missing",
+            "proposal_hash": "p-ttl-missing",
             "outcome": DecisionOutcome.AUTHORIZED.value,
-            "what_was_seen": {},
+            "what_was_seen": {"summary": "seen"},
+            "authorized_by": "human-owner",
             "selected_interpretation": None,
         },
-        refs=("prop-ttl-missing",),
+        refs=("p-ttl-missing",),
     ).materialize()
     assert missing.ttl is None
-    assert may_act(missing, "prop-ttl-missing") is False
+    assert may_act(missing, "p-ttl-missing") is False
 
 
 def test_check_does_not_spend():
-    """may_act is pure; only consume spends."""
     clear_spent()
-    env = decision(
-        swarm_id="test-swarm",
-        node_id="gate-1",
-        proposal_hash="prop-check",
-        outcome=DecisionOutcome.AUTHORIZED,
-        what_was_seen={},
-        ttl=FUTURE,
-    )
-    assert may_act(env, "prop-check") is True
-    assert may_act(env, "prop-check") is True  # still True
-    assert consume(env, "prop-check") is True
-    assert may_act(env, "prop-check") is False
+    env = _auth(proposal_hash="p-check")
+    assert may_act(env, "p-check") is True
+    assert may_act(env, "p-check") is True
+    assert consume(env, "p-check") is True
+    assert may_act(env, "p-check") is False
+
+
+def test_role_still_forgeable_but_human_record_required():
+    """Cryptographic sender authenticity is still not claimed.
+    An attacker can still stamp role=gate, but without a human record
+    may_act holds.  With a forged human record the harness must not
+    trust the envelope; the library only checks presence of the fields.
+    """
+    clear_spent()
+    env = _auth(node_id="attacker-node", proposal_hash="p-role")
+    assert env.role == "gate"
+    assert env.node_id == "attacker-node"
+    # presence of human record is enough for the pure library check
+    assert may_act(env, "p-role") is True
 
 
 def test_payload_tampering_is_rejected():
-    """Control: tampering without rehash is correctly rejected."""
     clear_spent()
-    env = decision(
-        swarm_id="test-swarm",
-        node_id="gate-1",
-        proposal_hash="prop-tamper",
-        outcome=DecisionOutcome.AUTHORIZED,
-        what_was_seen={},
-        ttl=FUTURE,
-    )
+    env = _auth(proposal_hash="p-tamper")
     tampered = Envelope(
         kind=env.kind,
         swarm_id=env.swarm_id,
@@ -144,23 +160,31 @@ def test_payload_tampering_is_rejected():
         ts=env.ts,
         ttl=env.ttl,
         refs=env.refs,
-        payload={**env.payload, "outcome": "AUTHORIZED", "injected": "evil"},
+        payload={**env.payload, "authorized_by": "attacker"},
         msg_id=env.msg_id,
         content_hash=env.content_hash,
     )
     assert tampered.verify() is False
-    assert may_act(tampered, "prop-tamper") is False
+    assert may_act(tampered, "p-tamper") is False
 
 
 if __name__ == "__main__":
-    test_role_confusion_still_open()
-    print("Defect 1 (role): still open as expected")
+    test_hybrid_happy_path()
+    print("hybrid happy path: ok")
+    test_missing_authorized_by_holds()
+    print("missing authorized_by: hold")
+    test_empty_what_was_seen_holds()
+    print("empty what_was_seen: hold")
+    test_missing_authorized_by_field_holds()
+    print("omitted authorized_by field: hold")
     test_intra_process_replay_closed()
-    print("Intra-process replay: closed")
+    print("intra-process replay: closed")
     test_ttl_rules()
     print("TTL rules: hold on missing/past")
     test_check_does_not_spend()
-    print("Check vs consume: separated")
+    print("check vs consume: separated")
+    test_role_still_forgeable_but_human_record_required()
+    print("role forgeable; human record still required")
     test_payload_tampering_is_rejected()
-    print("Tamper control: rejected")
+    print("tamper control: rejected")
     print("All assertions passed.")

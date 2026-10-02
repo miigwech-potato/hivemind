@@ -12,4 +12,16 @@
 9. The hivemind has no single point of failure by design,
    and therefore also no single point of responsibility.
 10. This notation is the implementation.
+
+11. HYBRID AUTHORIZATION (owner decision)
+    The Gate may open on a count (Σ weights ≥ θ) OR Queen.approve.
+    The Gate holds no private key and does not sign.
+    An AUTHORIZED that may become 米 must also carry an explicit,
+    contemporaneous human authorization record:
+      - authorized_by  : named human
+      - what_was_seen  : non-empty record of what that human saw
+    Absence, emptiness, or ambiguity of that record → ⏑.
+    Capability is still not authority.
+    Cross-node / durable spent tracking is the harness’s duty;
+    the channel library closes only intra-process replay.
 ```

@@ -16,13 +16,20 @@
 ║    OR timeout                      ║
 ║                                    ║
 ║  on OPEN  → emit AUTHORIZED        ║
-║  on CLOSE → emit REJECTED          ║
+║             (must carry human      ║
+║              authorization record) ║
+║  on CLOSE → emit REJECTED / ⏑      ║
 ║                                    ║
 ║  The Gate holds no private key.    ║
 ║  The Gate only counts.             ║
 ╚════════════════════════════════════╝
 
-INVARIANT:
-  Authorization is a count, not a signature.
-  (This is the experimental opposite of the Loom seal.)
+INVARIANT (hybrid — owner decision):
+  The Gate opens on a count (or Queen.approve).
+  The seal that may become 米 is that count PLUS an explicit,
+  contemporaneous human authorization record
+  (authorized_by + what_was_seen).
+  Without the human record the correct output is ⏑.
+  Authorization is therefore both a count and a recorded human act.
+  (Neither pure count nor pure signature.)
 ```
