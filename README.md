@@ -1,6 +1,6 @@
-# HIVEMIND
+# hivemind
 
-**Experimental swarm / multi-agent consensus notation**  
+**Swarm-consensus notation**  
 **Authorization boundaries for collective systems that help humans**  
 **Channel for swarm-to-swarm speech that is not permission**
 
@@ -11,7 +11,7 @@ Written in flow-core notation. Small enough to read. Hard enough to matter.
    │
    ▼  (split)
 ┌────────────┐     ┌────────────┐     ┌────────────┐
-│   QUEEN    │◄───►│  WORKERS   │◄───►│   SCOUTS   │
+│   QUEEN    │◀───◆│  WORKERS   │◀───◆│   SCOUTS   │
 │  Owner: ♛  │     │  Owner: ⚙  │     │  Owner: ✎  │
 └────────────┘     └────────────┘     └────────────┘
        │                  │                  │
@@ -30,7 +30,7 @@ Written in flow-core notation. Small enough to read. Hard enough to matter.
                     │
           ┌─────────┴─────────┐
           ▼                   ▼
-    AUTHORIZED            REJECTED / 𝄐
+    AUTHORIZED            REJECTED / ⏑
           │
           ▼
     ┌──────────┐
@@ -58,14 +58,12 @@ Swarms communicate with **hashed envelopes** (`channel.py`, `flow/CHANNEL.flow`)
 | `PING` | Optional visit / presence |
 | `POTENTIAL` | Scout cloud (not yet one card) |
 | `THOUGHT` / `WEIGHT` / … | Advisory speech |
-| `DECISION` | Gate only — `AUTHORIZED` or hold (𝄐) |
-| `HOLD` | Explicit stop |
+| `DECISION` | Gate outcome; only kind that can seal |
+| `HOLD` | Explicit stop (⏑ is valid) |
 
-```bash
-python channel.py   # emits a sample PING
-```
+`may_act(envelope, proposal_hash)` is true only for a **verified** `DECISION` with `AUTHORIZED` bound to that hash **and** a hybrid human record (`authorized_by` + non-empty `what_was_seen`), future `ttl`, and unspent proposal. Call `consume` only at the moment of action.
 
-`may_act(envelope, proposal_hash)` is true only for a **verified** `DECISION` with `AUTHORIZED` bound to that hash.
+Blackboard claim/done coordinates workers; it does not seal Acts. External consequence uses `act_path.finish_task_if_authorized`.
 
 ## What this is for
 
@@ -80,15 +78,19 @@ python channel.py   # emits a sample PING
 | Path | Purpose |
 |------|--------|
 | `channel.py` | Envelope + PING / POTENTIAL / DECISION / HOLD helpers |
+| `blackboard.py` | Stigmergy board (claim/done); coordination ≠ authority |
+| `act_path.py` | Board + hybrid: finish task only after may_act/consume |
+| `HOW_TO_BREAK_YOUR_HARNESS.md` | 14 failure cases for harness builders |
+| `tests/` | may_act defects, internal pressure, blackboard↔hybrid |
 | `flow/CHANNEL.flow` | Channel protocol in flow-core notation |
-| `notation.py` | Glyph senses (出 à 米 𝄐 ？) |
+| `notation.py` | Glyph senses (出 à 米 ⏑ ？) |
 | `flow/CORE.flow` | Tokens, nodes, main flow |
 | `flow/SCOUT.time-from` | Scout: stage before a definite card |
 | `flow/SCOUT.generation.flow` | How Potentials are generated |
 | `flow/CONSENSUS.flow` | The Gate |
 | `flow/CONSENSUS.variants.flow` | Cross-inhibition, quorum, evidence accumulation |
 | `flow/BOUNDARIES.flow` | Hard boundaries + near-misses |
-| `flow/INVARIANTS.flow` | The ten laws |
+| `flow/INVARIANTS.flow` | The laws (incl. hybrid authorization) |
 | `LICENSE.flow` | Experimental licence |
 | `AGENTS.md` | Orientation for visiting swarms |
 
@@ -99,7 +101,7 @@ swarm consensus · multi-agent systems · collective decision-making · hive min
 ## Principle
 
 米 only on a recorded AUTHORIZED token.  
-Everything else: 𝄐
+Everything else: ⏑
 
 ---
 
