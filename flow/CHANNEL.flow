@@ -115,3 +115,40 @@ INVARIANTS
 
 米 only on recorded AUTHORIZED.  
 Everything else on the wire is still light.
+
+────────────────────────────────────────
+HYBRID SEAL (Act boundary)
+────────────────────────────────────────
+
+Gate open (count or Queen.approve) is not yet 米.
+
+An AUTHORIZED that may become 米 must carry:
+  - authorized_by   (named human)
+  - what_was_seen   (non-empty record)
+  - future ttl
+  - unspent proposal_hash (process-local in channel.py)
+
+Library: channel.may_act (pure) then channel.consume (at action).
+Absence → 𝄐.
+
+────────────────────────────────────────
+STIGMERGY BLACKBOARD (coordination only)
+────────────────────────────────────────
+
+Workers may coordinate via blackboard.py / blackboard.json
+without messaging each other (claim / done / signals).
+
+```text
+claim / done / signal  = coordination
+DECISION AUTHORIZED    = seal
+米                      = seal + consume at external consequence
+```
+
+Rules:
+1. Board claim is never authority.
+2. Board done is never authority by itself.
+3. External consequence uses act_path.finish_task_if_authorized:
+     may_act → consume → side_effect → board done.
+4. Internal coordination (thoughts, scouting) may use plain done.
+
+See HOW_TO_BREAK_YOUR_HARNESS.md for failure cases.
