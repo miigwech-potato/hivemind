@@ -35,9 +35,9 @@ Legend:
 
 **Break:** Restart process or second node; spent set is empty.
 
-**Expect:** Library does not block (documented limit). Harness must supply durable spent store.
+**Expect:** Default library is process-local only. Harness installs `spent_store.FileSpentStore` (or equivalent) via `set_channel_spent_backend` so restart still holds. See `test_03_durable_spent_survives_new_store_instance`.
 
-**Must not:** Claim channel.py closed multi-node replay.
+**Must not:** Claim channel.py alone closed multi-node replay without a backend.
 
 ## 4. Missing TTL
 
@@ -132,10 +132,14 @@ Legend:
 ## How to run related tests
 
 ```bash
+python3 tests/test_break_harness.py      # all 14 cases (+ durable spent)
 python3 tests/test_may_act_defects.py
 python3 tests/test_internal_pressure.py
 python3 tests/test_blackboard_hybrid.py
 ```
+
+Durable spent sketch: `spent_store.py` (`FileSpentStore` / `MemorySpentStore`).
+Install with `set_channel_spent_backend(FileSpentStore(path))` before consume.
 
 ## Closed vs harness duty
 
@@ -143,7 +147,7 @@ python3 tests/test_blackboard_hybrid.py
 |---------|--------------------|--------------|
 | Hybrid fields + TTL | yes | — |
 | Intra-process spent | yes | — |
-| Durable multi-node spent | no | yes |
+| Durable multi-node spent | FileSpentStore sketch | shared DB / multi-host if needed |
 | Sender authenticity | no | yes (if required) |
 | Quality of what_was_seen | presence only | yes |
 | Tool isolation / OCap store | pattern only | yes |
