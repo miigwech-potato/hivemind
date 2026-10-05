@@ -26,7 +26,10 @@ import sys
 import time
 from typing import Any, Callable
 
-BOARD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "blackboard.json")
+BOARD = os.environ.get(
+    "HIVEMIND_BLACKBOARD",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "blackboard.json"),
+)
 
 
 def _ensure_board() -> None:
