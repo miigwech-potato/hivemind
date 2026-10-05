@@ -16,6 +16,7 @@ CLI for workers:
     python3 blackboard.py signal <agent> <type> "<message>"
     python3 blackboard.py signals                # recent signal trail
     python3 blackboard.py result <task>          # result of a finished task
+    python3 blackboard.py reclaim <seconds>      # reopen stale claims (claim TTL)
 """
 from __future__ import annotations
 
@@ -226,6 +227,38 @@ def cmd_add(task_id: str, desc: str, needs: str = "") -> None:
     print(_atomic(_op))
 
 
+def cmd_reclaim_stale(max_age_s: float) -> None:
+    """Harness helper: reopen claimed tasks older than max_age_s (claim TTL).
+
+    Mitigates hog monopolizing the board. Prints count reclaimed.
+    """
+
+    def _op(s: dict[str, Any]) -> int:
+        now = time.time()
+        n = 0
+        for tid, t in s["tasks"].items():
+            if t.get("status") != "claimed":
+                continue
+            claimed_at = t.get("claimed_at") or 0
+            if now - float(claimed_at) >= max_age_s:
+                t["status"] = "open"
+                t["claimed_by"] = None
+                t["claimed_at"] = None
+                s["signals"].append(
+                    {
+                        "ts": now,
+                        "from": "board",
+                        "type": "reclaim",
+                        "task": tid,
+                        "message": f"stale after {max_age_s}s",
+                    }
+                )
+                n += 1
+        return n
+
+    print(_atomic(_op))
+
+
 def main(argv: list[str]) -> int:
     if len(argv) < 2:
         print(__doc__)
@@ -249,6 +282,8 @@ def main(argv: list[str]) -> int:
         elif cmd == "add" and len(argv) >= 4:
             needs = argv[4] if len(argv) >= 5 else ""
             cmd_add(argv[2], argv[3], needs)
+        elif cmd == "reclaim" and len(argv) >= 3:
+            cmd_reclaim_stale(float(argv[2]))
         else:
             print(__doc__)
             return 1
