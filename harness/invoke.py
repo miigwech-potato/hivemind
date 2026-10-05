@@ -35,12 +35,13 @@ def on_tool_call(
 ) -> InvokeResult:
     """Validate capability, check then consume the hybrid seal, then dispatch.
 
-    Bind task_id to proposal_hash in callers when each capability is intended
-    for exactly one proposal. An exception from run_tool propagates after the
-    authorization is consumed; callers must reconcile uncertain outcomes
-    instead of blindly retrying a non-idempotent action.
+    The capability binds both task_id and proposal_hash to the call. Trusted
+    harness dispatchers must derive tool and action from the operation being
+    invoked, not from untrusted model arguments. An exception from run_tool
+    propagates after authorization is consumed; callers must reconcile
+    uncertain outcomes instead of blindly retrying a non-idempotent action.
     """
-    if not registry.check(cap_id, tool, action, task_id):
+    if not registry.check(cap_id, tool, action, task_id, proposal_hash):
         return InvokeResult("HOLD", reason="missing or invalid capability")
     if not may_act(decision_env, proposal_hash):
         return InvokeResult("HOLD", reason="hybrid authorization check failed")
