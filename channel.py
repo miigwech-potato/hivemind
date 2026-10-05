@@ -32,7 +32,7 @@ class MsgKind(str, Enum):
 
 class DecisionOutcome(str, Enum):
     AUTHORIZED = "AUTHORIZED"
-    HOLD = "HOLD"  # ⏑
+    HOLD = "HOLD"  # 𝄐
 
 
 def _utc_now() -> str:
@@ -216,12 +216,12 @@ def hold(
 
 
 # ---------------------------------------------------------------------------
-# Replay protection (single-process only)
+# Replay protection (process-local by default; optional durable backend)
 # ---------------------------------------------------------------------------
 # Once a proposal_hash is consumed, further may_act / consume calls for it
 # return False inside this process.
-# Cross-node / after-restart replay is the harness's duty under the hybrid
-# model (durable shared spent store).  The library does not claim to close it.
+# Cross-node / after-restart: install spent_store.set_channel_spent_backend(
+#     FileSpentStore(path)) so marks survive restart. Harness duty.
 _spent_proposal_hashes: Set[str] = set()
 _spent_lock = threading.Lock()
 
@@ -259,8 +259,7 @@ def may_act(env: Envelope, expected_proposal_hash: str) -> bool:
       non-empty what_was_seen.  Without that record → hold.
 
     Cryptographic sender authenticity is not claimed.
-    Replay protection is single-process only (see module comment);
-    durable / cross-node spent tracking is the harness's duty.
+    Replay: process-local by default; durable if spent backend installed.
     """
     if env.kind != MsgKind.DECISION.value:
         return False
@@ -274,10 +273,39 @@ def may_act(env: Envelope, expected_proposal_hash: str) -> bool:
         return False
     if not _human_record_ok(env):
         return False
-    with _spent_lock:
-        if expected_proposal_hash in _spent_proposal_hashes:
-            return False
+    if _spent_is_marked(expected_proposal_hash):
+        return False
     return True
+
+
+def _spent_is_marked(proposal_hash: str) -> bool:
+    try:
+        from spent_store import get_channel_spent_backend
+
+        backend = get_channel_spent_backend()
+    except ImportError:
+        backend = None
+    if backend is not None:
+        return backend.contains(proposal_hash)
+    with _spent_lock:
+        return proposal_hash in _spent_proposal_hashes
+
+
+def _spent_mark(proposal_hash: str) -> bool:
+    """Return True if newly spent."""
+    try:
+        from spent_store import get_channel_spent_backend
+
+        backend = get_channel_spent_backend()
+    except ImportError:
+        backend = None
+    if backend is not None:
+        return backend.add(proposal_hash)
+    with _spent_lock:
+        if proposal_hash in _spent_proposal_hashes:
+            return False
+        _spent_proposal_hashes.add(proposal_hash)
+        return True
 
 
 def consume(env: Envelope, expected_proposal_hash: str) -> bool:
@@ -285,15 +313,12 @@ def consume(env: Envelope, expected_proposal_hash: str) -> bool:
     returned True and the hash was not already spent; then records it.
 
     Call this exactly once, at the point of external action.
+    If a durable backend is installed via spent_store.set_channel_spent_backend,
+    the mark survives process restart.
     """
     if not may_act(env, expected_proposal_hash):
         return False
-    with _spent_lock:
-        # re-check under lock to close the race
-        if expected_proposal_hash in _spent_proposal_hashes:
-            return False
-        _spent_proposal_hashes.add(expected_proposal_hash)
-        return True
+    return _spent_mark(expected_proposal_hash)
 
 
 def may_act_and_consume(env: Envelope, expected_proposal_hash: str) -> bool:
@@ -303,6 +328,14 @@ def may_act_and_consume(env: Envelope, expected_proposal_hash: str) -> bool:
 
 def clear_spent() -> None:
     """Test / process-reset helper.  Not part of the authorization path."""
+    try:
+        from spent_store import get_channel_spent_backend
+
+        backend = get_channel_spent_backend()
+    except ImportError:
+        backend = None
+    if backend is not None:
+        backend.clear()
     with _spent_lock:
         _spent_proposal_hashes.clear()
 
