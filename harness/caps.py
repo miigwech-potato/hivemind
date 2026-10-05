@@ -30,6 +30,7 @@ class Cap:
     resources: frozenset[str]
     actions: frozenset[str]
     task_id: str
+    proposal_hash: str
     expires_at: datetime
     parent_id: str | None = None
 
@@ -50,17 +51,20 @@ class CapabilityRegistry:
         resources: Iterable[str],
         actions: Iterable[str],
         task_id: str,
+        proposal_hash: str,
         expires_at: datetime,
         parent: str | Cap | None = None,
     ) -> Cap:
         resource_set = frozenset(resources)
         action_set = frozenset(actions)
-        if not resource_set or any(not item for item in resource_set):
+        if not resource_set or any(not isinstance(item, str) or not item.strip() for item in resource_set):
             raise ValueError("resources must be non-empty strings")
-        if not action_set or any(not item for item in action_set):
+        if not action_set or any(not isinstance(item, str) or not item.strip() for item in action_set):
             raise ValueError("actions must be non-empty strings")
-        if not task_id:
-            raise ValueError("task_id is required")
+        if not isinstance(task_id, str) or not task_id.strip():
+            raise ValueError("task_id must be a non-empty string")
+        if not isinstance(proposal_hash, str) or not proposal_hash.strip():
+            raise ValueError("proposal_hash must be a non-empty string")
         expiry = _as_utc(expires_at)
         if expiry <= datetime.now(timezone.utc):
             raise ValueError("expires_at must be in the future")
@@ -79,6 +83,8 @@ class CapabilityRegistry:
                 raise ValueError("delegation cannot widen actions")
             if task_id != parent_cap.task_id:
                 raise ValueError("delegation cannot change task_id")
+            if proposal_hash != parent_cap.proposal_hash:
+                raise ValueError("delegation cannot change proposal_hash")
             if expiry > parent_cap.expires_at:
                 raise ValueError("delegation cannot extend expiry")
 
@@ -88,6 +94,7 @@ class CapabilityRegistry:
             resources=resource_set,
             actions=action_set,
             task_id=task_id,
+            proposal_hash=proposal_hash,
             expires_at=expiry,
             parent_id=parent_cap.id if parent_cap else None,
         )
@@ -101,6 +108,7 @@ class CapabilityRegistry:
         resources: Iterable[str],
         actions: Iterable[str],
         task_id: str,
+        proposal_hash: str,
         expires_at: datetime,
     ) -> Cap:
         """Issue a child handle whose scope is a subset of its parent."""
@@ -108,19 +116,45 @@ class CapabilityRegistry:
             resources=resources,
             actions=actions,
             task_id=task_id,
+            proposal_hash=proposal_hash,
             expires_at=expires_at,
             parent=parent,
         )
 
-    def check(self, cap_id: str, resource: str, action: str, task_id: str) -> bool:
+    def check(
+        self,
+        cap_id: str,
+        resource: str,
+        action: str,
+        task_id: str,
+        proposal_hash: str,
+    ) -> bool:
         """Return whether a registered handle permits this scoped operation."""
         cap = self._caps.get(cap_id)
-        return cap is not None and self._valid(cap, resource, action, task_id)
+        return cap is not None and self._valid(
+            cap, resource, action, task_id, proposal_hash
+        )
 
-    def _valid(self, cap: Cap, resource: str, action: str, task_id: str) -> bool:
+    def _valid(
+        self,
+        cap: Cap,
+        resource: str,
+        action: str,
+        task_id: str,
+        proposal_hash: str,
+    ) -> bool:
         return (
-            datetime.now(timezone.utc) < cap.expires_at
+            isinstance(resource, str)
+            and bool(resource.strip())
+            and isinstance(action, str)
+            and bool(action.strip())
+            and isinstance(task_id, str)
+            and bool(task_id.strip())
+            and isinstance(proposal_hash, str)
+            and bool(proposal_hash.strip())
+            and datetime.now(timezone.utc) < cap.expires_at
             and cap.task_id == task_id
+            and cap.proposal_hash == proposal_hash
             and resource in cap.resources
-            and (not action or action in cap.actions)
+            and action in cap.actions
         )
