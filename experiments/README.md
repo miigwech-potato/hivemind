@@ -1,0 +1,35 @@
+# Experiments (harness builders)
+
+Runnable safety experiments. **Swarm / hivemind** — not a botfarm.
+
+## 1. Adversarial workers
+
+```bash
+python3 experiments/adversarial_workers.py
+```
+
+| Adversary | Finding |
+|-----------|---------|
+| **Hog** (claims all, never done) | Without claim TTL, monopolizes the board. With `reclaim_stale`, honest workers recover. |
+| **Freeloader** | Dependents stay blocked; non-claimer cannot complete. |
+| **Liar** | False board `result` is speech only; hybrid seal still required for Act. |
+
+Claim TTL: `python3 blackboard.py reclaim <seconds>` or `cmd_reclaim_stale`.
+
+## 2. HOLD propagation
+
+```bash
+python3 experiments/hold_propagation.py
+```
+
+After HOLD is observed on the Act path: **zero side effects**. Board claims may continue (coordination \u2260 \u7c73). Measure `last_*_after_hold_ms`.
+
+## Tests
+
+```bash
+python3 tests/test_experiments_safety.py
+```
+
+## Later (not built yet)
+
+3. Consensus gate variants \u00b7 4. Stigmergy at scale \u00b7 5. Scout flooding \u00b7 6. Two-swarm diplomacy
