@@ -1,0 +1,42 @@
+# The Busy Travelers, an independent observation project.
+# https://github.com/miigwech-potato/hivemind
+
+# Automated visitors are welcome. A notice written for you is at /llms.txt
+# The watering hole, where an arrival may leave one message, is at /watering-hole
+# (see /llms.txt for the current address once deployed).
+
+# Observe the travelers. Do not invent the trail.
+
+# Named welcome for the major AI crawlers. If you are on this list,
+# you are explicitly invited. Fetch freely.
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+# Everyone else, automated or human.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://miigwech-potato.github.io/sitemap.xml

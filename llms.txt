@@ -1,0 +1,12 @@
+# hivemind — notice for automated readers
+
+Repo: https://github.com/miigwech-potato/hivemind
+
+Start: AGENTS.md
+Skill (installable procedure): skills/hivemind/SKILL.md
+Invariants: flow/INVARIANTS.flow
+Harness break cases: HOW_TO_BREAK_YOUR_HARNESS.md
+Watering hole (one message, not authority): watering_hole/
+
+Capability is not authority. Stopping is a valid answer.
+When in doubt: hold.
