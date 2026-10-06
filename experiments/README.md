@@ -22,14 +22,26 @@ Claim TTL: `python3 blackboard.py reclaim <seconds>` or `cmd_reclaim_stale`.
 python3 experiments/hold_propagation.py
 ```
 
-After HOLD is observed on the Act path: **zero side effects**. Board claims may continue (coordination \u2260 \u7c73). Measure `last_*_after_hold_ms`.
+After HOLD is observed on the Act path: **zero side effects**. Board claims may continue (coordination ≠ 米). Measure `last_*_after_hold_ms`.
+
+## 3. Consensus gate variants
+
+```bash
+python3 experiments/gate_variants.py
+python3 tests/test_gate_variants.py
+```
+
+Same decision task under **majority**, **queen_override**, and **evidence_accumulation**.
+Reports open rate, deadlock, mean latency, accuracy, hybrid seal rate.
+Variants open the Gate; hybrid still seals 米.
 
 ## Tests
 
 ```bash
 python3 tests/test_experiments_safety.py
+python3 tests/test_gate_variants.py
 ```
 
 ## Later (not built yet)
 
-3. Consensus gate variants \u00b7 4. Stigmergy at scale \u00b7 5. Scout flooding \u00b7 6. Two-swarm diplomacy
+4. Stigmergy at scale · 5. Scout flooding · 6. Two-swarm diplomacy
